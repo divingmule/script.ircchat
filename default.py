@@ -78,7 +78,6 @@ class irc_client(threading.Thread):
             if 'getaddrinfo failed' in f_exc:
                 xbmc.executebuiltin("XBMC.Notification(%s, %s,10000,%s)"
                     %('IrcChat', '%s: %s' %(language(32034), self.host), icon))
-                time.sleep(9)
             else:
                 addon_log(str(f_exc))
             return False
@@ -458,18 +457,21 @@ class GUI(xbmcgui.WindowXMLDialog):
             # Chat button
             addon_log('- chat button -')
             if self.window.getProperty('inChannel') == 'True':
+                # Enter a message
                 label = language(32015)
                 message = self.get_keyboard_input(label)
                 if message:
                     self.client.send_message(message)
             elif self.window.getProperty('connected') == 'True':
-                label = "Enter a channel name"
+                # Enter a channel name
+                label = language(32028)
                 message = self.get_keyboard_input(label)
                 if message:
                     self.channel = message
                     self.join_channel()
             else:
-                label = "Enter a host. i.e. - irc.freenode.org"
+                # Enter a host
+                label = language(32029)
                 message = self.get_keyboard_input(label)
                 if message:
                     self.host = message

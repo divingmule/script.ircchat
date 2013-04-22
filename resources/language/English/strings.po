@@ -30,7 +30,7 @@ msgid "Color"
 msgstr ""
 
 msgctxt "#32006"
-msgid "IRC Host   e.g. irc.freenode.org"
+msgid "IRC Host  e.g. irc.freenode.org"
 msgstr ""
 
 msgctxt "#32007"
@@ -103,7 +103,7 @@ msgid "Error"
 msgstr ""
 
 msgctxt "#32025"
-msgid "Error"
+msgid ""
 msgstr ""
 
 msgctxt "#32026"
@@ -112,6 +112,14 @@ msgstr ""
 
 msgctxt "#32027"
 msgid "Add-on Debugging"
+msgstr ""
+
+msgctxt "#32028"
+msgid "Enter a channel name"
+msgstr ""
+
+msgctxt "#32029"
+msgid "Enter a Host  e.g. irc.freenode.org"
 msgstr ""
 
 msgctxt "#32030"
