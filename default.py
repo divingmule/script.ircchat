@@ -375,7 +375,7 @@ class GUI(xbmcgui.WindowXMLDialog):
                     chat_queue.put(('IrcChat', 'Quit: %s' %self.channel))
                     addon_log('Quit Channel')
                     break
-            self.connect_control.setLabel('Disconnect')
+            self.connect_control.setLabel(language(32003))
             self.window.setProperty('connect_control', 'disconnect')
             control = self.window.getControl(1300)
             control.reset()
