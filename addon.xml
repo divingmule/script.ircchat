@@ -16,6 +16,7 @@
       This add-on is a basic IRC client for XBMC mediacenter.
       Internet Relay Chat (IRC) is a protocol for live interactive
       Internet text messaging (chat) or synchronous conferencing.
+	  It is mainly designed for group communication in discussion forums, called channels.
     </description>
     <language></language>
     <license>GNU GENERAL PUBLIC LICENSE. Version 2, June 1991</license>
