@@ -2,7 +2,7 @@
 <addon id="script.ircchat"
        name="IrcChat"
        version="0.0.1"
-       provider-name="divingmule|MassIV">
+       provider-name="divingmule / MassIV">
   <requires>
     <import addon="xbmc.python" version="2.1.0"/>
   </requires>
