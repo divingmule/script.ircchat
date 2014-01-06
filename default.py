@@ -9,17 +9,16 @@ import time
 import xbmcgui
 import xbmcaddon
 
-addon = xbmcaddon.Addon(id='script.ircchat')
+addon = xbmcaddon.Addon()
+addon_id = addon.getAddonInfo('id')
 addon_version = addon.getAddonInfo('version')
 language = addon.getLocalizedString
 home = xbmc.translatePath(addon.getAddonInfo('path'))
 icon = os.path.join(home, 'icon.png')
 chat_queue = Queue.Queue(maxsize=0)
 client_queue = Queue.Queue(maxsize=0)
-debug = False
-if addon.getSetting('debug') == 'true':
-    debug = True
 action_previous_menu = (9, 10, 92, 216, 247, 257, 275, 61467, 61448)
+
 
 class irc_client(threading.Thread):
     def __init__(self):
@@ -81,7 +80,7 @@ class irc_client(threading.Thread):
             else:
                 addon_log(str(f_exc))
             return False
-        self.irc.setDebug = debug
+        # self.irc.setDebug = debug
         return True
 
     def login(self, **kwargs):
@@ -104,13 +103,13 @@ class irc_client(threading.Thread):
         try:
             message = self.irc.getmessage()
             if message:
-                try:
-                    addon_log('%s | %s | %s | %s | %s | %s'
-                        %(message['event'], message['responsetype'], message['nickname'],
-                          message['username'], message['recpt'], message['text']))
-                except:
-                    print_exc()
-                    addon_log('Error Parsing Message')
+                # try:
+                    # addon_log('%s | %s | %s | %s | %s | %s'
+                        # %(message['event'], message['responsetype'], message['nickname'],
+                          # message['username'], message['recpt'], message['text']))
+                # except:
+                    # print_exc()
+                    # addon_log('Error Parsing Message')
 
                 if message['responsetype'] == 'RPL_NAMREPLY':
                     names = message['text'].split('#%s :' %self.channel)[-1].split()
@@ -653,15 +652,15 @@ class GUI(xbmcgui.WindowXMLDialog):
 
 
 def addon_log(string):
-    if debug:
-        try:
-            if not isinstance(string, str):
-                string = str(string)
-            msg = string.decode("utf-8", 'ignore')
-            xbmc.log("[script.ircchat-%s]: %s"
-                %(addon_version, msg.encode('utf-8', 'ignore')), level=xbmc.LOGNOTICE)
-        except:
-            print_exc()
+    if not isinstance(string, str):
+        string = str(string)
+    try:
+        log_message = string.encode('utf-8', 'ignore')
+    except:
+        log_message = 'addonException: addon_log: %s' %format_exc()
+    # for ease in development change the level to LOGNOTICE
+    xbmc.log("[%s-%s]: %s" %(addon_id, addon_version, log_message), level=xbmc.LOGDEBUG)
+
 
 def get_params():
     params = {}
@@ -670,6 +669,7 @@ def get_params():
         p = i.split('=')
         params[p[0]]=p[1]
     return params
+
 
 def check_args():
     try:
@@ -684,7 +684,8 @@ def check_args():
         addon.openSettings()
         return False
 
-params=None
+
+params = None
 if len(sys.argv) > 1:
     params = get_params()
     addon_log('- PARAMS -')
