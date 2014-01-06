@@ -486,10 +486,10 @@ class GUI(xbmcgui.WindowXMLDialog):
                     addon_log('- open names -')
                     xbmc.executebuiltin("Skin.ToggleSetting(ChatIsLoading)")
                     names = self.client.get_names()
-                    names.sort()
+                    items = sorted(names, key=str.lower)
                     addon_log('- Name List -')
-                    addon_log(names)
-                    for i in names:
+                    addon_log(items)
+                    for i in items:
                         control.addItem(i)
                     self.window.setProperty('names', 'True')
                     xbmc.executebuiltin("Skin.Reset(ChatIsLoading)")
@@ -507,8 +507,8 @@ class GUI(xbmcgui.WindowXMLDialog):
                         addon_log('channels_list is None')
                         self.channels_list = self.client.get_channels()
                     if self.channels_list:
-                        self.channels_list.sort()
-                        for i in self.channels_list:
+                        items = sorted(self.channels_list, key=str.lower)
+                        for i in items:
                             channel = i
                             control.addItem(channel.lstrip('#'))
                         self.window.setProperty('channels', 'True')
