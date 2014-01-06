@@ -13,8 +13,8 @@ addon = xbmcaddon.Addon()
 addon_id = addon.getAddonInfo('id')
 addon_version = addon.getAddonInfo('version')
 language = addon.getLocalizedString
-home = xbmc.translatePath(addon.getAddonInfo('path'))
-icon = os.path.join(home, 'icon.png')
+addon_path = xbmc.translatePath(addon.getAddonInfo('path'))
+icon = os.path.join(addon_path, 'icon.png')
 chat_queue = Queue.Queue(maxsize=0)
 client_queue = Queue.Queue(maxsize=0)
 action_previous_menu = (9, 10, 92, 216, 247, 257, 275, 61467, 61448)
@@ -243,16 +243,16 @@ class irc_client(threading.Thread):
 class GUI(xbmcgui.WindowXMLDialog):
     def __init__( self, *args, **kwargs ):
         xbmcgui.WindowXMLDialog.__init__( self )
-        self.host = kwargs.get("host")
-        self.nickname = kwargs.get("nickname")
-        self.username = kwargs.get("username")
-        self.password = kwargs.get("password")
-        self.channel = kwargs.get("channel")
-        self.realname = kwargs.get("realname")
-        self.hostname = kwargs.get("hostname")
-        self.servername = kwargs.get("servername")
-        self.port = kwargs.get("port")
-        self.run_irc = kwargs.get("run_irc")
+        self.host = host
+        self.nickname = nickname
+        self.username = username
+        self.password = password
+        self.channel = channel
+        self.realname = realname
+        self.hostname = hostname
+        self.servername = servername
+        self.port = port
+        self.run_irc = run_irc
 
     def onInit(self):
         self.window = xbmcgui.Window(xbmcgui.getCurrentWindowDialogId())
@@ -715,6 +715,10 @@ if params:
     except:
         servername = None
     try:
+        hostname = params["hostname"]
+    except:
+        hostname = None
+    try:
         port = int(params["port"])
     except:
         port = 6667
@@ -742,9 +746,7 @@ if (__name__ == "__main__"):
     addon_log('script starting')
     ok = check_args()
     if ok:
-        window = GUI('script-IrcChat-main.xml', home,  nickname=nickname, host=host,
-                     username=username, run_irc=run_irc, password=password, channel=channel,
-                     realname=realname, servername=servername, port=port)
+        window = GUI('script-IrcChat-main.xml', addon_path)
         window.doModal()
 
 addon_log('script finished')
