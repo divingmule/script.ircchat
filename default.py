@@ -252,13 +252,7 @@ class GUI(xbmcgui.WindowXMLDialog):
         self.servername = servername
         self.port = port
         self.run_irc = run_irc
-        try:
-            if channel:
-                if not channel.startswith('#'):
-                    channel = '#%s' %channel
-                self.channel = channel
-        except:
-            self.channel = None
+        self.channel = channel
 
     def onInit(self):
         self.window = xbmcgui.Window(xbmcgui.getCurrentWindowDialogId())
@@ -709,7 +703,8 @@ if params:
         password = None
     try:
         channel = params["channel"]
-        if not channel: raise
+        if channel and not channel.startswith('#'):
+            channel = '#%s' %channel
     except:
         channel = None
     try:
@@ -736,8 +731,8 @@ if params:
 else:
     host = addon.getSetting('irc_host')
     channel = addon.getSetting('channel_name')
-    if channel == '':
-        channel = None
+    if channel and not channel.startswith('#'):
+        channel = '#%s' %channel
     nickname = addon.getSetting('nickname')
     username = addon.getSetting('username')
     realname = addon.getSetting('realname')
