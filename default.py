@@ -112,7 +112,7 @@ class irc_client(threading.Thread):
                     # addon_log('Error Parsing Message')
 
                 if message['responsetype'] == 'RPL_NAMREPLY':
-                    names = message['text'].split('#%s :' %self.channel)[-1].split()
+                    names = message['text'].split(self.channel)[-1].split()
                     for i in names:
                         if not i.strip() in self.name_list:
                             self.name_list.append(i.strip())
@@ -181,11 +181,11 @@ class irc_client(threading.Thread):
         c_size = control.size()
         control.selectItem(c_size-1)
         xbmc.executebuiltin("Control.move(1331, %s)" %c_size)
-        addon_log('List Size: %s' %c_size)
+        # addon_log('List Size: %s' %c_size)
         return
 
     def send_message(self, message):
-        self.irc.privmsg("#"+self.channel, message)
+        self.irc.privmsg(self.channel, message)
         chat_queue.put((self.nickname, message))
         return
 
@@ -247,12 +247,18 @@ class GUI(xbmcgui.WindowXMLDialog):
         self.nickname = nickname
         self.username = username
         self.password = password
-        self.channel = channel
         self.realname = realname
         self.hostname = hostname
         self.servername = servername
         self.port = port
         self.run_irc = run_irc
+        try:
+            if channel:
+                if not channel.startswith('#'):
+                    channel = '#%s' %channel
+                self.channel = channel
+        except:
+            self.channel = None
 
     def onInit(self):
         self.window = xbmcgui.Window(xbmcgui.getCurrentWindowDialogId())
@@ -296,9 +302,8 @@ class GUI(xbmcgui.WindowXMLDialog):
                 if not logged_in:
                     chat_queue.put(('IrcChat', language(32019)))
                 elif self.channel:
-                    if not self.channel == '':
-                        addon_log('SELF CHANNEL: '+self.channel)
-                        self.join_channel()
+                    addon_log('SELF CHANNEL: ' + self.channel)
+                    self.join_channel()
         else:
             # disconnect from server
             addon_log('- disconnect from server -')
@@ -335,7 +340,7 @@ class GUI(xbmcgui.WindowXMLDialog):
             self.window.setProperty('windowLabel', self.channel)
             chat_queue.put(('IrcChat', '%s: %s' %(language(32022), self.channel)))
             try:
-                self.client.irc.join("#"+self.channel)
+                self.client.irc.join(self.channel)
                 time.sleep(1)
             except:
                 print_exc()
@@ -362,7 +367,7 @@ class GUI(xbmcgui.WindowXMLDialog):
                 addon_log('waiting on client_wait')
                 time.sleep(0.5)
             addon_log('sending PART')
-            self.client.irc.part('#'+self.channel, reason='quit channel')
+            self.client.irc.part(self.channel, reason='quit channel')
             client_queue.put('client_run')
             while not client_queue.empty():
                 time.sleep(0.2)
@@ -382,13 +387,13 @@ class GUI(xbmcgui.WindowXMLDialog):
             self.window.setProperty('inChannel', '')
         xbmc.executebuiltin("Skin.Reset(ChatIsLoading)")
 
-    def get_keyboard_input(self, label):
-        keyboard = xbmc.Keyboard('', label)
+    def get_keyboard_input(self, label, string=''):
+        keyboard = xbmc.Keyboard(string, label)
         keyboard.doModal()
         if keyboard.isConfirmed() == False:
             return
         message = keyboard.getText()
-        if len(message) == 0:
+        if len(message) == 0 or message == string:
             return
         else:
             return message
@@ -431,6 +436,7 @@ class GUI(xbmcgui.WindowXMLDialog):
         self.window.clearProperty('clientIsRunning')
         self.window.clearProperty('awayMessage')
         xbmc.executebuiltin("Skin.Reset(ChatIsLoading)")
+        xbmc.executebuiltin("Skin.Reset(ChatNamesList)")
         self.close()
 
     def onAction(self, action):
@@ -464,7 +470,7 @@ class GUI(xbmcgui.WindowXMLDialog):
             elif self.window.getProperty('connected') == 'True':
                 # Enter a channel name
                 label = language(32028)
-                message = self.get_keyboard_input(label)
+                message = self.get_keyboard_input(label, '#')
                 if message:
                     self.channel = message
                     self.join_channel()
@@ -490,7 +496,7 @@ class GUI(xbmcgui.WindowXMLDialog):
                     addon_log('- Name List -')
                     addon_log(items)
                     for i in items:
-                        control.addItem(i)
+                        control.addItem(i.encode('utf-8'))
                     self.window.setProperty('names', 'True')
                     xbmc.executebuiltin("Skin.Reset(ChatIsLoading)")
                     xbmc.executebuiltin("Skin.ToggleSetting(ChatNamesList)")
@@ -509,8 +515,8 @@ class GUI(xbmcgui.WindowXMLDialog):
                     if self.channels_list:
                         items = sorted(self.channels_list, key=str.lower)
                         for i in items:
-                            channel = i
-                            control.addItem(channel.lstrip('#'))
+                            channel = i.encode('utf-8')
+                            control.addItem(channel)
                         self.window.setProperty('channels', 'True')
                         xbmc.executebuiltin("Skin.ToggleSetting(ChatNamesList)")
                     else:
@@ -569,7 +575,7 @@ class GUI(xbmcgui.WindowXMLDialog):
                     # connect to channel
                     control = self.window.getControl(1300)
                     item = control.getSelectedItem()
-                    self.channel = item.getLabel()
+                    self.channel = '#%s' %item.getLabel()
                     xbmc.executebuiltin("Skin.Reset(ChatNamesList)")
                     control.reset()
                     self.join_channel()
@@ -659,7 +665,7 @@ def addon_log(string):
     except:
         log_message = 'addonException: addon_log: %s' %format_exc()
     # for ease in development change the level to LOGNOTICE
-    xbmc.log("[%s-%s]: %s" %(addon_id, addon_version, log_message), level=xbmc.LOGDEBUG)
+    xbmc.log("[%s-%s]: %s" %(addon_id, addon_version, log_message), level=xbmc.LOGNOTICE)
 
 
 def get_params():
@@ -703,7 +709,7 @@ if params:
         password = None
     try:
         channel = params["channel"]
-        if channel == '': raise
+        if not channel: raise
     except:
         channel = None
     try:
@@ -730,6 +736,8 @@ if params:
 else:
     host = addon.getSetting('irc_host')
     channel = addon.getSetting('channel_name')
+    if channel == '':
+        channel = None
     nickname = addon.getSetting('nickname')
     username = addon.getSetting('username')
     realname = addon.getSetting('realname')
