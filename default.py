@@ -307,7 +307,7 @@ class GUI(xbmcgui.WindowXMLDialog):
             chat_queue.put(('IrcChat', language(32020)))
             self.client.irc.logout('client disconnected')
             time.sleep(1)
-            if not 'jtvirc' in self.host:
+            if not 'twitch' in self.host:
                 client_queue.put('client_run')
                 while not client_queue.empty():
                     time.sleep(0.2)
@@ -533,12 +533,14 @@ class GUI(xbmcgui.WindowXMLDialog):
                     self.connect_to_server()
             elif property == 'quitchannel':
                 self.join_channel()
+                if 'twitch' in self.host:
+                    self.connect_to_server()
             elif property == 'quit':
                 self.shutdown()
 
         elif controlID == 1300:
             # Names / Channel List button
-            if 'jtvirc' in self.host:
+            if 'twitch' in self.host:
                 pass
             else:
                 if self.window.getProperty('inChannel') == 'True':
