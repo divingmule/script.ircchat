@@ -43,8 +43,12 @@ class irc_client(threading.Thread):
                     addon_log('IrcChatIsRunning: clientIsWaiting')
                     time.sleep(0.5)
                 else:
-                    self.get_message()
-                    time.sleep(0.2)
+                    msg = self.get_message()
+                    if msg:
+                        # adjust the chatmessage delay here
+                        time.sleep(1.0)
+                    else:
+                        time.sleep(0.2)
             else:
                 break
         return
@@ -52,11 +56,14 @@ class irc_client(threading.Thread):
     def check_queue(self):
         # check for messages added to the chat_queue
         if not chat_queue.empty():
-            for i in range(0, 10):
+            for i in range(0, 4):
                 chat = chat_queue.get()
                 self.update_chat(chat)
                 chat_queue.task_done()
-                if chat_queue.empty():
+                if not chat_queue.empty():
+                    addon_log('chat not empty')
+                    time.sleep(0.5)
+                else:
                     break
 
         # check the client queue
@@ -80,7 +87,7 @@ class irc_client(threading.Thread):
             else:
                 addon_log(str(f_exc))
             return False
-        # self.irc.setDebug = debug
+        # self.irc.setDebug = True
         return True
 
     def login(self, **kwargs):
@@ -91,11 +98,15 @@ class irc_client(threading.Thread):
         self.hostname = kwargs.get("hostname")
         self.servername = kwargs.get("servername")
         try:
-            self.irc.login(nickname=self.nickname, username=self.username, password=self.password,
-                           realname=self.realname, hostname=self.hostname, servername=self.servername)
+            logged_in = self.irc.login(
+                    nickname=self.nickname, username=self.username, password=self.password,
+                    realname=self.realname, hostname=self.hostname, servername=self.servername)
+            if not logged_in == 0:
+                addon_log('Log in error: %s' %logged_in)
+                return False
             return True
         except:
-            print_exc()
+            addon_log('addonException: %s' %print_exc())
             chat_queue.put(('IrcChat %s' %language(32024), str(format_exc())))
             return False
 
@@ -108,7 +119,7 @@ class irc_client(threading.Thread):
                         # %(message['event'], message['responsetype'], message['nickname'],
                           # message['username'], message['recpt'], message['text']))
                 # except:
-                    # print_exc()
+                    # addon_log('addonException: %s' %print_exc())
                     # addon_log('Error Parsing Message')
 
                 if message['responsetype'] == 'RPL_NAMREPLY':
@@ -153,8 +164,10 @@ class irc_client(threading.Thread):
                             msg_nick += '[%s]' %language(32035)
                         new_message = (msg_nick,  message['text'].strip())
                         chat_queue.put(new_message)
+                        return True
+
         except:
-            print_exc()
+            addon_log('addonException: %s' %print_exc())
 
     def update_chat(self, message):
         control = self.window.getControl(1331)
@@ -208,7 +221,7 @@ class irc_client(threading.Thread):
             # options are channel, server
             self.irc.servercmd("LIST %s %s" % ('', ''))
         except:
-            print_exc
+            addon_log('addonException: %s' %print_exc())
             return
         endOfList = False
         while not endOfList:
@@ -278,21 +291,18 @@ class GUI(xbmcgui.WindowXMLDialog):
             else:
                 self.window.setProperty('windowLabel', self.host)
                 chat_queue.put(('IrcChat', language(32017)))
-                for i in range(0,2):
-                    logged_in = self.client.login(
-                        nickname=self.nickname, username=self.username, password=self.password,
-                        realname=self.realname, hostname=self.hostname, servername=self.servername
-                        )
-                    if logged_in:
-                        self.window.setProperty('connected', 'True')
-                        xbmc.executebuiltin("Skin.ToggleSetting(ChatIsConnected)")
-                        chat_queue.put(('IrcChat', '%s: %s' %(language(32018), self.host)))
-                        self.connect_control.setLabel(language(32003))
-                        self.window.setProperty('connect_control', 'disconnect')
-                        break
-                    else:
-                        addon_log('login failed')
-                        time.sleep(0.2)
+                logged_in = self.client.login(
+                    nickname=self.nickname, username=self.username, password=self.password,
+                    realname=self.realname, hostname=self.hostname, servername=self.servername)
+                if logged_in:
+                    self.window.setProperty('connected', 'True')
+                    xbmc.executebuiltin("Skin.ToggleSetting(ChatIsConnected)")
+                    chat_queue.put(('IrcChat', '%s: %s' %(language(32018), self.host)))
+                    self.connect_control.setLabel(language(32003))
+                    self.window.setProperty('connect_control', 'disconnect')
+                else:
+                    addon_log('login failed')
+                    xbmc.executebuiltin("Skin.Reset(ChatIsLoading)")
                 if not logged_in:
                     chat_queue.put(('IrcChat', language(32019)))
                 elif self.channel:
@@ -337,12 +347,12 @@ class GUI(xbmcgui.WindowXMLDialog):
                 self.client.irc.join(self.channel)
                 time.sleep(1)
             except:
-                print_exc()
+                addon_log('addonException: %s' %print_exc())
                 try:
                     self.client.irc.join(self.channel)
                     time.sleep(1)
                 except:
-                    print_exc()
+                    addon_log('addonException: %s' %print_exc())
                     chat_queue.put(('IrcChat %s' %language(32024), str(print_exc())))
                     xbmc.executebuiltin("Skin.Reset(ChatIsLoading)")
                     return
@@ -411,7 +421,7 @@ class GUI(xbmcgui.WindowXMLDialog):
                 term = self.terminate_thread(self.client)
                 addon_log('client stopped')
             except ValueError:
-                print_exc()
+                addon_log('addonException: %s' %print_exc())
                 pass
         else:
             addon_log('client stopped')
