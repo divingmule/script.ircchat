@@ -402,7 +402,7 @@
 				<onup>1300</onup>
 				<ondown>1300</ondown>
 				<pagecontrol>60</pagecontrol>
-				<scrolltime tween="cubic" easing="inout">325</scrolltime>
+				<scrolltime tween="cubic" easing="out">600</scrolltime>
 				<orientation>vertical</orientation>
 									
 				<itemlayout height="25" width="350">
