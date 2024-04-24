@@ -51,7 +51,7 @@ class Irclib:
     
     while(1):
       tmpresponse = self.getmessage()
-      print tmpresponse['responsetype']
+      print(tmpresponse['responsetype'])
       
       if tmpresponse['responsetype'] == "ERR_NOSUCHSERVER":
         returninfo['errormessage'] = tmpresponse['responsetype']
@@ -64,39 +64,39 @@ class Irclib:
           returninfo['errormessage'] = tmpresponse['responsetype']
           return returninfo
         else:
-          print "ERROR IN whois() --> (ERR_NOSUCHNICK)" # it shouldn't get here
+          print("ERROR IN whois() --> (ERR_NOSUCHNICK)") # it shouldn't get here
           return 1
       
       elif tmpresponse['responsetype'] == "RPL_WHOISUSER":
-        tmpstring = string.split(tmpresponse['text'])
+        tmpstring = tmpresponse['text'].split()
         returninfo['nickname'] = tmpstring[1]
         returninfo['username'] = tmpstring[2]
         returninfo['hostname'] = tmpstring[3]
-        returninfo['realname'] = string.join(tmpstring[5:])[1:]
+        returninfo['realname'] = ''.join(tmpstring[5:])[1:]
         del tmpstring
 
       elif tmpresponse['responsetype'] == "RPL_WHOISSERVER":
-        tmpstring = string.split(tmpresponse['text'])
+        tmpstring = tmpresponse['text'].split()
         returninfo['server'] = tmpstring[2]
-        returninfo['serverinfo'] = string.join(tmpstring[3:])[1:]
+        returninfo['serverinfo'] = ''.join(tmpstring[3:])[1:]
         del tmpstring
 
       elif tmpresponse['responsetype'] == "RPL_WHOISOPERATOR":
         returninfo['isoperator'] = 1
 
       elif tmpresponse['responsetype'] == "RPL_WHOISIDLE":
-        tmpstring = string.split(tmpresponse['text'])
+        tmpstring = tmpresponse['text'].split()
         returninfo['idle'] = int(tmpstring[2])
         del tmpstring
 
       elif tmpresponse['responsetype'] == "RPL_AWAY":
-        tmpstring = string.split(tmpresponse['text'])
+        tmpstring = tmpresponse['text'].split()
         returninfo['away'] = 1
-        returninfo['awaymessage'] = string.join(tmpstring[2:])[1:]
+        returninfo['awaymessage'] = ''.join(tmpstring[2:])[1:]
         
       elif tmpresponse['responsetype'] == "RPL_WHOISCHANNELS":
-        tmpstring = string.split(tmpresponse['text'])
-        tmpstring[2] = string.replace(tmpstring[2], ':', '')
+        tmpstring = tmpresponse['text'].split()
+        tmpstring[2] = tmpstring[2].replace(':', '')
         returninfo['channels'] = tmpstring[2:]
       
       elif tmpresponse['responsetype'] == "RPL_ENDOFWHOIS":
@@ -116,7 +116,7 @@ class Irclib:
     if self.setDebug == 0:
       pass
     else:
-      print msg
+      print(msg)
     
   def list(self, channels=None, server=None):
     "Returns a list of channels in (channel_name, users, topic) form" 
@@ -131,8 +131,8 @@ class Irclib:
       while 1:
         x = self.getmessage()
         if (x['event'] == "RESPONSE" and x['responsetype'] == "RPL_LIST"):
-          d = string.split(x['text'])
-          chan = [d[1], d[2], string.join(d[3:]," ")[1:]]
+          d = x['text'].split()
+          chan = [d[1], d[2], (" ".join(d[3:]))[1:]]
           list.append(chan)  
         elif (x['event'] == "RESPONSE" and x['responsetype'] == "RPL_LISTEND"):
           return list
@@ -152,7 +152,7 @@ class Irclib:
     while 1:
       x = self.getmessage()     
       if x['event'] == "RESPONSE" and x['responsetype'] == "RPL_NAMREPLY":
-        tmptxt = string.split(x['text'])
+        tmptxt = x['text'].split()
         chan = tmptxt[2]
         for i in range((len(tmptxt) - 3)):
           if i == 0:
@@ -174,8 +174,8 @@ class Irclib:
     
   def send(self,data): # reimplementation of socket.send function with error handling
     try:
-      self.sockfd.send(data)
-    except socket.error, e:
+      self.sockfd.send(data.encode('utf-8'))
+    except socket.error as e:
       if e:
           self.debug( "Socket error: %s" %e)
       return "ERR_COULDNOTSEND"
@@ -415,19 +415,20 @@ class Irclib:
       elif number == 384: return("RPL_MYPORTIS")              
       elif number == 476: return("ERR_BADCHANMASK")         
       # not official
-      elif number == 001: return("RPL_WELCOME")
+      elif number == 1: return("RPL_WELCOME")
 
   def getmessage(self):
-    buffer = ''
+    buffer = b''
     self.sockfd.settimeout(3.0)
     try:
       while(1):
         x = self.sockfd.recv(1)
-        if x != '\n':
+        if x != b'\n':
           buffer = buffer + x
         else:
+          buffer = buffer.decode('utf-8')
           self.debug("BUFFER IS: " + buffer)
-          msg = string.split(buffer,':')
+          msg = buffer.split(':')
           message = ({"seqnumber":'notvalid', "responsetype":0,"channel":0,"nickname":0,"username":0,"hostname":0,"event":0,"recpt":0, "text":0})
           if buffer[:4] == "PING":
             self.debug("PING!")
@@ -452,18 +453,18 @@ class Irclib:
             self.messages.append(message)
             return message  
           else:
-            tmpmsg = string.split(msg[1])
+            tmpmsg = msg[1].split()
             if "!" in (tmpmsg[0]):
-              message['nickname'] = tmpmsg[0][:string.find(tmpmsg[0],"!")]
-              message['username'] = tmpmsg[0][string.find(tmpmsg[0],"!")+1:string.find(tmpmsg[0],"@")] # ugly line ;)
+              message['nickname'] = tmpmsg[0][:tmpmsg[0].find("!")]
+              message['username'] = tmpmsg[0][tmpmsg[0].find("!")+1:tmpmsg[0].find("@")] # ugly line ;)
             else:
               message['nickname'] = tmpmsg[0]
               message['username'] = tmpmsg[0]
-            message['hostname'] = tmpmsg[0][string.find(tmpmsg[0],"@")+1:]
+            message['hostname'] = tmpmsg[0][tmpmsg[0].find("@")+1:]
             try:
               message['event'] = "RESPONSE"
               message['responsetype'] = self.getresponsetype(int(tmpmsg[1]))
-              message['text'] = buffer[(string.find(buffer,tmpmsg[1]))+4:]
+              message['text'] = buffer[(buffer.find(tmpmsg[1]))+4:]
               message['seqnumber'] = self.getseqnumber()
               self.messages.append(message)
               return message
@@ -471,7 +472,7 @@ class Irclib:
               message['event'] = tmpmsg[1]
             if (message['event'] == "PRIVMSG"):
               message['recpt'] = tmpmsg[2]
-              message['text'] = string.join(msg[2:],':')
+              message['text'] = ':'.join(msg[2:])
             elif (message['event'] == "JOIN"):
               try:
                 message['channel'] = msg[2]
@@ -483,17 +484,17 @@ class Irclib:
               message['text'] = msg[2]
             elif (message['event'] == "MODE"):
               try:
-                message['text'] = string.join(msg[2:],':')
+                message['text'] = ':'.join(msg[2:])
               except IndexError:
                 message['text'] = tmpmsg[3]
               message['recpt'] = tmpmsg[2]
             elif (message['event'] == "NOTICE"):
-              message['text'] = buffer[string.find(buffer,"NOTICE")+7:]
+              message['text'] = buffer[buffer.find("NOTICE")+7:]
             elif (message['event'] == "KILL"):
-              message['text'] = buffer[(string.find(buffer,"("))+1:-1]
+              message['text'] = buffer[(buffer.find("("))+1:-1]
               self.debug(message['text'])
             elif (message['event'] == "NICK"):
-              message['text'] = buffer[(string.find(buffer,"NICK"))+5:]
+              message['text'] = buffer[(buffer.find("NICK"))+5:]
             else:
               message['event'] = "UNKNOWN"
               message['text'] = "DO SOMETHING HERE!"
@@ -502,5 +503,5 @@ class Irclib:
             self.messages.append(message)
           return message
     except:
-        print_exc
+        print_exc()
    
